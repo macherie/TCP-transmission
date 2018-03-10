@@ -11,57 +11,59 @@
 #include "task.h"
 #include "lcd.h"
 #include "TskLed.h"
+#include "TskKey.h"
 #include "TskLCD.h"
 #include "tcp_server_demo.h"
 
-//ÔÚLCDÉÏÏÔÊ¾µØÖ·ĞÅÏ¢ÈÎÎñ
-//ÈÎÎñÓÅÏÈ¼¶
+//åœ¨LCDä¸Šæ˜¾ç¤ºåœ°å€ä¿¡æ¯ä»»åŠ¡
+//ä»»åŠ¡ä¼˜å…ˆçº§
 #define DISPLAY_TASK_PRIO	(tskIDLE_PRIORITY + 2) 
-//ÈÎÎñ¶ÑÕ»´óĞ¡
+//ä»»åŠ¡å †æ ˆå¤§å°
 #define DISPLAY_STK_SIZE	128
-//ÈÎÎñ¶ÑÕ»
+//ä»»åŠ¡å †æ ˆ
 StackType_t	DISPLAY_TASK_STK[DISPLAY_STK_SIZE];
-//ÈÎÎñ¿ØÖÆ¿é
+//ä»»åŠ¡æ§åˆ¶å—
 StaticTask_t DISPLAY_TASK_BUFF;
-//ÈÎÎñÃû×Ö
+//ä»»åŠ¡åå­—
 const char *DISPLAY_TASK_NAME = "task display";
-//ÈÎÎñº¯Êı
+//ä»»åŠ¡å‡½æ•°
 void display_task(void *pdata);
 
-//STARTÈÎÎñ
-//ÈÎÎñÓÅÏÈ¼¶
+//STARTä»»åŠ¡
+//ä»»åŠ¡ä¼˜å…ˆçº§
 #define START_TASK_PRIO		(tskIDLE_PRIORITY + 1) 
-//ÈÎÎñ¶ÑÕ»´óĞ¡
+//ä»»åŠ¡å †æ ˆå¤§å°
 #define START_STK_SIZE		128
-//ÈÎÎñ¶ÑÕ»
+//ä»»åŠ¡å †æ ˆ
 StackType_t	START_TASK_STK[DISPLAY_STK_SIZE];
-//ÈÎÎñ¿ØÖÆ¿é
+//ä»»åŠ¡æ§åˆ¶å—
 StaticTask_t START_TASK_BUFF;
-//ÈÎÎñÃû×Ö
+//ä»»åŠ¡åå­—
 const char *START_TASK_NAME = "task start";
-//ÈÎÎñº¯Êı
+//ä»»åŠ¡å‡½æ•°
 void start_task(void *pdata);
+
 
 void show_address(u8 mode)
 {
 	u8 buf[30];
 	if(mode==2)
 	{
-		sprintf((char*)buf,"DHCP IP :%d.%d.%d.%d",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3]);						//´òÓ¡¶¯Ì¬IPµØÖ·
+		sprintf((char*)buf,"DHCP IP :%d.%d.%d.%d",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3]);						//æ‰“å°åŠ¨æ€IPåœ°å€
 		LCD_ShowString(30,260,260,24,24,buf); 
-		sprintf((char*)buf,"DHCP GW :%d.%d.%d.%d",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3]);	//´òÓ¡Íø¹ØµØÖ·
+		sprintf((char*)buf,"DHCP GW :%d.%d.%d.%d",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3]);	//æ‰“å°ç½‘å…³åœ°å€
 		LCD_ShowString(30,290,290,24,24,buf); 
-		sprintf((char*)buf,"NET MASK:%d.%d.%d.%d",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3]);	//´òÓ¡×ÓÍøÑÚÂëµØÖ·
+		sprintf((char*)buf,"NET MASK:%d.%d.%d.%d",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3]);	//æ‰“å°å­ç½‘æ©ç åœ°å€
 		LCD_ShowString(30,320,320,24,24,buf); 
 		LCD_ShowString(30,350,210,24,24,(u8 *)"Port:8088!"); 
 	}
 	else 
 	{
-		sprintf((char*)buf,"Static IP:%d.%d.%d.%d",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3]);						//´òÓ¡¶¯Ì¬IPµØÖ·
+		sprintf((char*)buf,"Static IP:%d.%d.%d.%d",lwipdev.ip[0],lwipdev.ip[1],lwipdev.ip[2],lwipdev.ip[3]);						//æ‰“å°åŠ¨æ€IPåœ°å€
 		LCD_ShowString(30,260,260,24,24,buf); 
-		sprintf((char*)buf,"Static GW:%d.%d.%d.%d",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3]);	//´òÓ¡Íø¹ØµØÖ·
+		sprintf((char*)buf,"Static GW:%d.%d.%d.%d",lwipdev.gateway[0],lwipdev.gateway[1],lwipdev.gateway[2],lwipdev.gateway[3]);	//æ‰“å°ç½‘å…³åœ°å€
 		LCD_ShowString(30,290,290,24,24,buf);  
-		sprintf((char*)buf,"NET MASK:%d.%d.%d.%d",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3]);	//´òÓ¡×ÓÍøÑÚÂëµØÖ·
+		sprintf((char*)buf,"NET MASK:%d.%d.%d.%d",lwipdev.netmask[0],lwipdev.netmask[1],lwipdev.netmask[2],lwipdev.netmask[3]);	//æ‰“å°å­ç½‘æ©ç åœ°å€
 		LCD_ShowString(30,320,320,24,24,buf); 
 		LCD_ShowString(30,350,210,24,24,(u8 *)"Port:8088!"); 
 	}	
@@ -69,83 +71,84 @@ void show_address(u8 mode)
 
 int main(void)
 {
-	delay_init();	    	 //ÑÓÊ±º¯Êı³õÊ¼»¯	
-	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//ÉèÖÃÖĞ¶ÏÓÅÏÈ¼¶·Ö×éÎª×é4£º0Î»ÇÀÕ¼ÓÅÏÈ¼¶£¬0Î»ÏìÓ¦ÓÅÏÈ¼¶	
-	uart_init(115200);	 	//´®¿Ú³õÊ¼»¯Îª115200
-	LED_Init();		  	 	//³õÊ¼»¯ÓëLEDÁ¬½ÓµÄÓ²¼ş½Ó¿Ú
-	LCD_Init();				//LCD³õÊ¼»¯
-	KEY_Init();	 			//³õÊ¼»¯°´¼ü
- 	usmart_dev.init(72);	//³õÊ¼»¯USMART
-	FSMC_SRAM_Init();		//³õÊ¼»¯Íâ²¿SRAM
-	my_mem_init(SRAMIN);         //³õÊ¼»¯ÄÚ²¿ÄÚ´æ³Ø
-	my_mem_init(SRAMEX);		//³õÊ¼»¯Íâ²¿ÄÚ´æ³Ø
+	delay_init();	    	 //å»¶æ—¶å‡½æ•°åˆå§‹åŒ–	
+	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_4);//è®¾ç½®ä¸­æ–­ä¼˜å…ˆçº§åˆ†ç»„ä¸ºç»„4ï¼š0ä½æŠ¢å ä¼˜å…ˆçº§ï¼Œ0ä½å“åº”ä¼˜å…ˆçº§	
+	uart_init(115200);	 	//ä¸²å£åˆå§‹åŒ–ä¸º115200
+	LED_Init();		  	 	//åˆå§‹åŒ–ä¸LEDè¿æ¥çš„ç¡¬ä»¶æ¥å£
+	LCD_Init();				//LCDåˆå§‹åŒ–
+	KEY_Init();	 			//åˆå§‹åŒ–æŒ‰é”®
+ 	usmart_dev.init(72);	//åˆå§‹åŒ–USMART
+	FSMC_SRAM_Init();		//åˆå§‹åŒ–å¤–éƒ¨SRAM
+	my_mem_init(SRAMIN);         //åˆå§‹åŒ–å†…éƒ¨å†…å­˜æ± 
+	my_mem_init(SRAMEX);		//åˆå§‹åŒ–å¤–éƒ¨å†…å­˜æ± 
 	POINT_COLOR = RED;
 	LCD_ShowString(30,30,200,24,24,(u8 *)"WARSHIP STM32F103");
 	LCD_ShowString(30,60,200,24,24,(u8 *)"LWIP+FreeRTOS Test");
 	LCD_ShowString(30,90,200,24,24,(u8 *)"XAOWANG");
 	LCD_ShowString(30,120,200,20,24,(u8 *)"2018/1/28");
-//	POINT_COLOR = BLUE; 	//À¶É«×ÖÌå
-	while(lwip_comm_init()) //lwip³õÊ¼»¯
+//	POINT_COLOR = BLUE; 	//è“è‰²å­—ä½“
+	while(lwip_comm_init()) //lwipåˆå§‹åŒ–
 	{
-		LCD_ShowString(30,200,200,20,24,(u8 *)"Lwip Init failed!"); 	//lwip³õÊ¼»¯Ê§°Ü
+		LCD_ShowString(30,200,200,20,24,(u8 *)"Lwip Init failed!"); 	//lwipåˆå§‹åŒ–å¤±è´¥
 		delay_ms(500);
 		LCD_Fill(30,200,230,230,BLACK);
 		delay_ms(500);
 	}
-	LCD_ShowString(30,200,200,20,24,(u8 *)"Lwip Init Success!"); 		//lwip³õÊ¼»¯³É¹¦
-	while(tcp_server_init() != pdPASS) 									//³õÊ¼»¯tcp_client(´´½¨tcp_clientÏß³Ì)
+	LCD_ShowString(30,200,200,20,24,(u8 *)"Lwip Init Success!"); 		//lwipåˆå§‹åŒ–æˆåŠŸ
+	while(tcp_server_init() != pdPASS) 									//åˆå§‹åŒ–tcp_client(åˆ›å»ºtcp_clientçº¿ç¨‹)
 	{
-		LCD_ShowString(30,230,200,20,24,(u8 *)"TCP Server failed!!"); //tcp¿Í»§¶Ë´´½¨Ê§°Ü
+		LCD_ShowString(30,230,200,20,24,(u8 *)"TCP Server failed!!"); //tcpå®¢æˆ·ç«¯åˆ›å»ºå¤±è´¥
 		delay_ms(500);
 		LCD_Fill(30,230,230,260,WHITE);
 		delay_ms(500);
 	}
-	LCD_ShowString(30,230,230,20,24,(u8 *)"TCP Server Success!"); 			//TCP´´½¨³É¹¦
+	LCD_ShowString(30,230,230,20,24,(u8 *)"TCP Server Success!"); 			//TCPåˆ›å»ºæˆåŠŸ
 //	
 //	TskLCDCreate();
-//	TskLedCreate();			//´´½¨LedÈÎÎñ
+//	TskLedCreate();			//åˆ›å»ºLedä»»åŠ¡
 	xTaskCreateStatic(start_task,
 					  START_TASK_NAME,
 					  (uint32_t)START_STK_SIZE,
 					 (void*)NULL,
 					  (UBaseType_t)START_TASK_PRIO,
 					 (StackType_t *const)START_TASK_STK,
-					 (StaticTask_t *const)&START_TASK_BUFF);		 //¿ªÊ¼ÈÎÎñ
-	vTaskStartScheduler();          //¿ªÆôÈÎÎñµ÷¶È
+					 (StaticTask_t *const)&START_TASK_BUFF);		 //å¼€å§‹ä»»åŠ¡
+	vTaskStartScheduler();          //å¼€å¯ä»»åŠ¡è°ƒåº¦
 	return 0;
 }
 
-//startÈÎÎñ
+//startä»»åŠ¡
 void start_task(void *pdata)
 {
 
 //	pdata = pdata ;
-	TskLedCreate();													//´´½¨LedÈÎÎñ						
+	TskLedCreate();													//åˆ›å»ºLedä»»åŠ¡	
+	TskKeyCreate();													//åˆ›å»ºæŒ‰é”®å¤„ç†ä»»åŠ¡	
 	xTaskCreateStatic(display_task,
 					  DISPLAY_TASK_NAME,
 					  (uint32_t)DISPLAY_STK_SIZE,
 					 (void*)NULL,
 					  (UBaseType_t)DISPLAY_TASK_PRIO,
 					 (StackType_t *const)DISPLAY_TASK_STK,
-					 (StaticTask_t *const)&DISPLAY_TASK_BUFF);		 //ÏÔÊ¾ÈÎÎñ
-	vTaskSuspend(NULL); 											//¹ÒÆğstart_taskÈÎÎñ
+					 (StaticTask_t *const)&DISPLAY_TASK_BUFF);		 //æ˜¾ç¤ºä»»åŠ¡
+	vTaskSuspend(NULL); 											//æŒ‚èµ·start_taskä»»åŠ¡
 
 }
 
-//ÏÔÊ¾µØÖ·µÈĞÅÏ¢
+//æ˜¾ç¤ºåœ°å€ç­‰ä¿¡æ¯
 void display_task(void *pdata)
 {
 	while(1)
 	{ 
-#if LWIP_DHCP									//µ±¿ªÆôDHCPµÄÊ±ºò
-		if(lwipdev.dhcpstatus != 0) 			//¿ªÆôDHCP
+#if LWIP_DHCP									//å½“å¼€å¯DHCPçš„æ—¶å€™
+		if(lwipdev.dhcpstatus != 0) 			//å¼€å¯DHCP
 		{
-			show_address(lwipdev.dhcpstatus );	//ÏÔÊ¾µØÖ·ĞÅÏ¢
-			vTaskSuspend(NULL);  		//ÏÔÊ¾ÍêµØÖ·ĞÅÏ¢ºó¹ÒÆğ×ÔÉíÈÎÎñ
+			show_address(lwipdev.dhcpstatus );	//æ˜¾ç¤ºåœ°å€ä¿¡æ¯
+			vTaskSuspend(NULL);  		//æ˜¾ç¤ºå®Œåœ°å€ä¿¡æ¯åæŒ‚èµ·è‡ªèº«ä»»åŠ¡
 		}
 #else
-		show_address(0); 						//ÏÔÊ¾¾²Ì¬µØÖ·
-		vTaskSuspend(NULL);  					//ÏÔÊ¾ÍêµØÖ·ĞÅÏ¢ºó¹ÒÆğ×ÔÉíÈÎÎñ
+		show_address(0); 						//æ˜¾ç¤ºé™æ€åœ°å€
+		vTaskSuspend(NULL);  					//æ˜¾ç¤ºå®Œåœ°å€ä¿¡æ¯åæŒ‚èµ·è‡ªèº«ä»»åŠ¡
 #endif //LWIP_DHCP
 		vTaskDelay(100);
 	}
