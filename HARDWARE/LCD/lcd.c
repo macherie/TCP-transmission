@@ -77,7 +77,7 @@
 
 //LCD的画笔颜色和背景色	   
 u16 POINT_COLOR=0x0000;	//画笔颜色
-u16 BACK_COLOR=0xFFFF;  //背景色 
+u16 BACK_COLOR=BLACK;  //背景色 
   
 //管理LCD重要参数
 //默认为竖屏
@@ -1059,7 +1059,7 @@ void LCD_Init(void)
 	}		 
 	LCD_Display_Dir(0);		//默认为竖屏
 	LCD_LED=1;				//点亮背光
-	LCD_Clear(BLACK);
+	LCD_Clear(BACK_COLOR);
 }  
 //清屏函数
 //color:要清屏的填充色
@@ -1232,7 +1232,42 @@ void LCD_ShowChar(u16 x,u16 y,u8 num,u8 size,u8 mode)
 			}
 		}  	 
 	}  	    	   	 	  
-}   
+} 
+
+//在指定位置使用指定颜色显示一个字符
+//x,y:起始坐标
+//num:要显示的字符:" "--->"~"
+//size:字体大小 12/16/24
+//mode:叠加方式(1)还是非叠加方式(0)
+void LCD_ShowCharColor(u16 x,u16 y,u8 num,u8 size,u8 mode,u16 color)
+{  							  
+    u8 temp,t1,t;
+	u16 y0=y;
+	u8 csize=(size/8+((size%8)?1:0))*(size/2);		//得到字体一个字符对应点阵集所占的字节数	
+ 	num=num-' ';//得到偏移后的值（ASCII字库是从空格开始取模，所以-' '就是对应字符的字库）
+	for(t=0;t<csize;t++)
+	{   
+		if(size==12)temp=asc2_1206[num][t]; 	 	//调用1206字体
+		else if(size==16)temp=asc2_1608[num][t];	//调用1608字体
+		else if(size==24)temp=asc2_2412[num][t];	//调用2412字体
+		else return;								//没有的字库
+		for(t1=0;t1<8;t1++)
+		{			    
+			if(temp&0x80)LCD_Fast_DrawPoint(x,y,color);
+			else if(mode==0)LCD_Fast_DrawPoint(x,y,color);
+			temp<<=1;
+			y++;
+			if(y>=lcddev.height)return;		//超区域了
+			if((y-y0)==size)
+			{
+				y=y0;
+				x++;
+				if(x>=lcddev.width)return;	//超区域了
+				break;
+			}
+		}  	 
+	}  	    	   	 	  
+} 
 //m^n函数
 //返回值:m^n次方.
 u32 LCD_Pow(u8 m,u8 n)
@@ -1309,12 +1344,32 @@ void LCD_ShowString(u16 x,u16 y,u16 width,u16 height,u8 size,u8 *p)
     {       
         if(x>=width){x=x0;y+=size;}
         if(y>=height)break;//退出
-        LCD_ShowChar(x,y,*p,size,1);
+        LCD_ShowChar(x,y,*p,size,0);
         x+=size/2;
         p++;
     }  
 }
 
+//显示字符串
+//x,y:起点坐标
+//width,height:区域大小  
+//size:字体大小
+//*p:字符串起始地址	
+//color 字体颜色
+void LCD_ShowStringColor(u16 x,u16 y,u16 width,u16 height,u8 size,u8 *p, u16 color)
+{         
+	u8 x0=x;
+	width+=x;
+	height+=y;
+    while((*p<='~')&&(*p>=' '))//判断是不是非法字符!
+    {       
+        if(x>=width){x=x0;y+=size;}
+        if(y>=height)break;//退出
+        LCD_ShowCharColor(x,y,*p,size,1, color);
+        x+=size/2;
+        p++;
+    }  
+}
 
 
 
